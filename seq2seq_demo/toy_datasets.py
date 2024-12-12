@@ -117,3 +117,58 @@ def get_dataset_AddSeq(data_num=2000):
             }
         return batch
     return dataset,collate_fn,(index_bos,index_eos,index_pad,index_add,vocab_size)
+
+def get_dataset_AddSeq4DecoderOnly(data_num=2000):
+    """
+        生成一个加法任务数据集，输入是两个个位数的数字，输出是这两个数字的和。  
+        
+        index_add=10
+
+        index_equal=11
+        
+        index_pad=12
+        
+        index_bos=13
+
+        index_eos=14
+        
+        比如：
+            text: 13 4 10 1 11 5 14
+            text: 13 6 10 7 11 1 3 14
+    """
+    dataset=[]
+    index_add=10
+    index_equal=index_add+1
+    index_pad=index_equal+1
+    index_bos=index_pad+1
+    index_eos=index_bos+1
+    vocab_size=index_eos+1
+    
+    
+    def digital2list(digits:int):
+        if digits==0:
+            return [0]
+        res=[]
+        while digits>0:
+            res.append(digits%10)
+            digits//=10
+        return res[::-1] # 把列表倒过来
+    for _ in range(data_num):    
+        a = random.randint(0, 9)
+        b = random.randint(0, 9)
+        c = a + b
+        text = torch.tensor([index_bos] + digital2list(a) + [ index_add ] + digital2list(b) + [index_equal] + digital2list(c) + [index_eos])
+
+        dataset.append(
+            {
+                'text':text
+            }
+        )
+    def collate_fn(batch):
+        text=[b['text'] for b in batch]
+        text=nn.utils.rnn.pad_sequence(text,padding_value=index_pad,batch_first=True)  
+        batch={
+                'text':text,
+            }
+        return batch
+    return dataset,collate_fn,(index_bos,index_eos,index_pad,index_add,index_equal,vocab_size)
